@@ -470,18 +470,16 @@ function VideoEmbed({ title, source, description, url, timestamp }) {
         </div>
       ) : isTwitter ? (
         <div style={{ background: "#000", padding: 16, minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ fontSize: 10, color: "#1DA1F2", fontFamily: "monospace", letterSpacing: 2, marginBottom: 8 }}>X / TWITTER \u00b7 LIVE POST</div>
+          <div style={{ fontSize: 10, color: "#1DA1F2", fontFamily: "monospace", letterSpacing: 2, marginBottom: 8 }}>X / TWITTER · LIVE POST</div>
           <div style={{ fontSize: 12, color: "#fff", lineHeight: 1.5 }}>{title}</div>
-          <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: "#1DA1F2", marginTop: 8, textDecoration: "none" }}>View on X \u2197</a>
+          <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: "#1DA1F2", marginTop: 8, textDecoration: "none" }}>View on X ↗</a>
         </div>
       ) : isCNN ? (
-        <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", background: "#111" }}>
-          <iframe
-            src={url}
-            title={title}
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-            allowFullScreen
-          />
+        <div style={{ background: "#111", padding: 20, minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center", cursor: "pointer" }}
+          onClick={() => window.open(url, '_blank')}>
+          <div style={{ fontSize: 10, color: "#CC0000", fontFamily: "monospace", letterSpacing: 2, marginBottom: 8 }}>CNN · VIDEO REPORT</div>
+          <div style={{ fontSize: 13, color: "#fff", lineHeight: 1.5 }}>{title}</div>
+          <div style={{ fontSize: 10, color: "#CC0000", marginTop: 10, textDecoration: "none" }}>Watch on CNN.com ▶</div>
         </div>
       ) : null}
       <div style={{ padding: "14px 16px" }}>
@@ -495,7 +493,7 @@ function VideoEmbed({ title, source, description, url, timestamp }) {
         <div style={{ fontSize: 11, color: "#ccc", lineHeight: 1.5, marginBottom: 8 }}>{description}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 8, color: "#888", fontFamily: "monospace" }}>{source}</span>
-          {url && <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 8, color: "#FF3B30", fontFamily: "monospace", fontWeight: 700, textDecoration: "none" }}>WATCH LIVE \u25b6</a>}
+          {url && <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 8, color: "#FF3B30", fontFamily: "monospace", fontWeight: 700, textDecoration: "none" }}>WATCH LIVE ▶</a>}
         </div>
       </div>
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "#333" }} />
@@ -766,7 +764,7 @@ function ImageCard({ caption, source, description, imgUrl }) {
   return (
     <div style={{border:"1px solid #1a1a1a",borderRadius:3,overflow:"hidden",flex:1,minWidth:0}}>
       {imgUrl && !err ? (
-        <img src={imgUrl} alt={caption} onError={() => setErr(true)} style={{width:"100%",height:220,objectFit:"cover",display:"block",opacity:0.95,filter:"grayscale(10%)"}} />
+        <img src={imgUrl} alt={caption} onError={() => setErr(true)} referrerPolicy="no-referrer" crossOrigin="anonymous" style={{width:"100%",height:220,objectFit:"cover",display:"block",opacity:0.95,filter:"grayscale(10%)"}} />
       ) : (
         <div style={{background:"#111",height:220,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{textAlign:"center",padding:20}}>
@@ -866,20 +864,24 @@ export default function App() {
                   <div style={{ background: "#000", height: 140, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     onClick={() => window.open(c.url, '_blank')}>
                     <div style={{ textAlign: "center", padding: 12 }}>
-                      <div style={{ fontSize: 22, marginBottom: 6, color: "#fff" }}>\ud835\udd4f</div>
-                      <div style={{ fontSize: 8, color: "#1DA1F2", fontFamily: "monospace", letterSpacing: 1 }}>VIEW LIVE POST \u25b6</div>
+                      <div style={{ fontSize: 22, marginBottom: 6, color: "#fff" }}>𝕏</div>
+                      <div style={{ fontSize: 8, color: "#1DA1F2", fontFamily: "monospace", letterSpacing: 1 }}>VIEW LIVE POST ▶</div>
                     </div>
                   </div>
                 ) : isCNN ? (
-                  <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", background: "#111" }}>
-                    <iframe src={c.url} title={c.title} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allowFullScreen />
+                  <div style={{ background: "#111", height: 100, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    onClick={() => window.open(c.url, '_blank')}>
+                    <div style={{ textAlign: "center", padding: 12 }}>
+                      <div style={{ fontSize: 10, color: "#CC0000", fontFamily: "monospace", letterSpacing: 1 }}>CNN VIDEO</div>
+                      <div style={{ fontSize: 8, color: "#CC0000", marginTop: 4, fontFamily: "monospace" }}>WATCH ▶</div>
+                    </div>
                   </div>
                 ) : c.url ? (
                   <div style={{ background: "#111", height: 100, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     onClick={() => window.open(c.url, '_blank')}>
                     <div style={{ textAlign: "center", padding: 12 }}>
                       <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3B30", boxShadow: "0 0 8px #FF3B30", margin: "0 auto 8px" }} />
-                      <div style={{ fontSize: 8, color: "#FF3B30", fontFamily: "monospace", letterSpacing: 1 }}>VIEW SOURCE \u25b6</div>
+                      <div style={{ fontSize: 8, color: "#FF3B30", fontFamily: "monospace", letterSpacing: 1 }}>VIEW SOURCE ▶</div>
                     </div>
                   </div>
                 ) : (
@@ -901,7 +903,7 @@ export default function App() {
                     <span>{c.src}</span>
                     <div style={{ display: "flex", gap: 8 }}>
                       {c.views && <span style={{ color: c.c }}>{c.views} views</span>}
-                      {c.url && <span style={{ color: "#FF3B30", fontWeight: 700 }}>LIVE \u25b6</span>}
+                      {c.url && <span style={{ color: "#FF3B30", fontWeight: 700 }}>LIVE ▶</span>}
                     </div>
                   </div>
                 </div>
