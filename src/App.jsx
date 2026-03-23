@@ -443,16 +443,51 @@ function CompressionTimeline() {
 }
 
 function VideoEmbed({ title, source, description, url, timestamp }) {
+  const getYouTubeId = (u) => {
+    if (!u) return null;
+    const m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+    return m ? m[1] : null;
+  };
+  const ytId = getYouTubeId(url);
+  const isTwitter = url && (url.includes('x.com') || url.includes('twitter.com'));
+  const isCNN = url && url.includes('cnn.com') && url.includes('video');
+
   return (
-    <div onClick={() => { if (url) window.open(url, '_blank'); }} style={{
+    <div style={{
       background: "#000", border: "2px solid #222", borderRadius: 4, margin: "20px 0",
-      cursor: url ? "pointer" : "default", overflow: "hidden", position: "relative"
+      overflow: "hidden", position: "relative"
     }}>
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, #FF3B30, transparent 30%, transparent 70%, #FF3B30)" }} />
+      {ytId ? (
+        <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden" }}>
+          <iframe
+            src={`https://www.youtube.com/embed/${ytId}?rel=0`}
+            title={title}
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : isTwitter ? (
+        <div style={{ background: "#000", padding: 16, minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ fontSize: 10, color: "#1DA1F2", fontFamily: "monospace", letterSpacing: 2, marginBottom: 8 }}>X / TWITTER \u00b7 LIVE POST</div>
+          <div style={{ fontSize: 12, color: "#fff", lineHeight: 1.5 }}>{title}</div>
+          <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: "#1DA1F2", marginTop: 8, textDecoration: "none" }}>View on X \u2197</a>
+        </div>
+      ) : isCNN ? (
+        <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", background: "#111" }}>
+          <iframe
+            src={url}
+            title={title}
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+            allowFullScreen
+          />
+        </div>
+      ) : null}
       <div style={{ padding: "14px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3B30", boxShadow: "0 0 6px #FF3B30" }} />
-          <span style={{ fontSize: 8, letterSpacing: 2, color: "#FF3B30", fontFamily: "monospace", fontWeight: 700 }}>BROADCAST</span>
+          <span style={{ fontSize: 8, letterSpacing: 2, color: "#FF3B30", fontFamily: "monospace", fontWeight: 700 }}>LIVE BROADCAST</span>
           <div style={{ flex: 1 }} />
           {timestamp && <span style={{ fontSize: 8, color: "#888", fontFamily: "monospace" }}>{timestamp}</span>}
         </div>
@@ -460,13 +495,14 @@ function VideoEmbed({ title, source, description, url, timestamp }) {
         <div style={{ fontSize: 11, color: "#ccc", lineHeight: 1.5, marginBottom: 8 }}>{description}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 8, color: "#888", fontFamily: "monospace" }}>{source}</span>
-          {url && <span style={{ fontSize: 8, color: "#FF3B30", fontFamily: "monospace" }}>WATCH</span>}
+          {url && <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 8, color: "#FF3B30", fontFamily: "monospace", fontWeight: 700, textDecoration: "none" }}>WATCH LIVE \u25b6</a>}
         </div>
       </div>
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: "#333" }} />
     </div>
   );
 }
+
 
 // Pre-computed SVG paths from Natural Earth 50m data via d3-geo
 // Projection: d3.geoEquirectangular().center([46,29.5]).scale(1200).translate([500,270])
@@ -730,19 +766,20 @@ function ImageCard({ caption, source, description, imgUrl }) {
   return (
     <div style={{border:"1px solid #1a1a1a",borderRadius:3,overflow:"hidden",flex:1,minWidth:0}}>
       {imgUrl && !err ? (
-        <img src={imgUrl} alt={caption} onError={() => setErr(true)} style={{width:"100%",height:180,objectFit:"cover",display:"block",opacity:0.8,filter:"grayscale(20%)"}} />
+        <img src={imgUrl} alt={caption} onError={() => setErr(true)} style={{width:"100%",height:220,objectFit:"cover",display:"block",opacity:0.95,filter:"grayscale(10%)"}} />
       ) : (
-        <div style={{background:"#111",height:180,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{background:"#111",height:220,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{textAlign:"center",padding:20}}>
-            <div style={{fontSize:20,marginBottom:6,opacity:0.3}}>&#9645;</div>
+            <div style={{fontSize:18,marginBottom:8}}>📷</div>
             <div style={{fontSize:8,color:"#555",fontFamily:"monospace",letterSpacing:2}}>IMAGE: {caption.toUpperCase()}</div>
             <div style={{fontSize:7,color:"#444",fontFamily:"monospace",marginTop:4}}>Available in deployed version</div>
           </div>
         </div>
       )}
-      <div style={{padding:"10px 14px"}}>
-        <div style={{fontSize:10,color:"#ccc",lineHeight:1.5,marginBottom:4}}>{description}</div>
-        <div style={{fontSize:7,color:"#888",fontFamily:"monospace"}}>{source}</div>
+      <div style={{padding:"12px 14px",background:"#0a0a0a"}}>
+        <div style={{fontSize:12,fontWeight:600,color:"#fff",marginBottom:4,fontFamily:"monospace"}}>{caption}</div>
+        <div style={{fontSize:10,color:"#ccc",lineHeight:1.5,marginBottom:6}}>{description}</div>
+        <div style={{fontSize:7,color:"#FF3B30",fontFamily:"monospace",letterSpacing:1}}>REAL IMAGE · {source}</div>
       </div>
     </div>
   );
@@ -804,30 +841,75 @@ export default function App() {
           <h2 style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 42, color: "#fff", letterSpacing: 2, lineHeight: 1, marginBottom: 6 }}>THE BROADCAST WALL</h2>
           <p style={{ fontSize: 14, color: "#ccc", fontStyle: "italic", marginBottom: 28 }}>Nine screens. Three weeks. The war as it played across every channel simultaneously.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 6, background: "#000", padding: 6, borderRadius: 2 }}>
-            {CLIPS.map((c, i) => (
-              <div key={i} onClick={() => { if (c.url) window.open(c.url, '_blank'); }} style={{ background: "#0a0a0a", border: `1px solid #1a1a1a`, borderRadius: 2, padding: "12px 14px", position: "relative", overflow: "hidden", cursor: c.url ? "pointer" : "default", transition: "border-color 0.3s" }} onMouseEnter={e => { if (c.url) e.currentTarget.style.borderColor = c.c; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "#1a1a1a"; }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: c.c, opacity: 0.6 }} />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF3B30", boxShadow: "0 0 4px #FF3B30" }} />
-                    <span style={{ fontSize: 7, letterSpacing: 2, color: c.c, fontFamily: "monospace", fontWeight: 700 }}>{c.type}</span>
+            {CLIPS.map((c, i) => {
+              const getYtId = (u) => { if (!u) return null; const m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/); return m ? m[1] : null; };
+              const ytId = getYtId(c.url);
+              const isX = c.url && (c.url.includes('x.com') || c.url.includes('twitter.com'));
+              const isCNN = c.url && c.url.includes('cnn.com') && c.url.includes('video');
+              return (
+              <div key={i} style={{
+                background: "#0a0a0a", border: "1px solid #222", borderRadius: 3, overflow: "hidden",
+                position: "relative", display: "flex", flexDirection: "column"
+              }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: c.c, opacity: 0.6, zIndex: 1 }} />
+                {ytId ? (
+                  <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", background: "#000" }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+                      title={c.title}
+                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
                   </div>
-                  <span style={{ fontSize: 7, color: "#888", fontFamily: "monospace" }}>{c.date}</span>
-                </div>
-                <div style={{ fontSize: 12, color: "#fff", fontWeight: 600, marginBottom: 5, lineHeight: 1.3, fontFamily: "monospace" }}>{c.title}</div>
-                <div style={{ fontSize: 10, color: "#ccc", lineHeight: 1.5, marginBottom: 6 }}>{c.detail}</div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#888", fontFamily: "monospace" }}>
-                  <span>{c.src}</span>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {c.views && <span style={{ color: c.c }}>{c.views} views</span>}
-                    {c.url && <span style={{ color: "#FF3B30", fontWeight: 700 }}>WATCH &#8599;</span>}
+                ) : isX ? (
+                  <div style={{ background: "#000", height: 140, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    onClick={() => window.open(c.url, '_blank')}>
+                    <div style={{ textAlign: "center", padding: 12 }}>
+                      <div style={{ fontSize: 22, marginBottom: 6, color: "#fff" }}>\ud835\udd4f</div>
+                      <div style={{ fontSize: 8, color: "#1DA1F2", fontFamily: "monospace", letterSpacing: 1 }}>VIEW LIVE POST \u25b6</div>
+                    </div>
+                  </div>
+                ) : isCNN ? (
+                  <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", background: "#111" }}>
+                    <iframe src={c.url} title={c.title} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allowFullScreen />
+                  </div>
+                ) : c.url ? (
+                  <div style={{ background: "#111", height: 100, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    onClick={() => window.open(c.url, '_blank')}>
+                    <div style={{ textAlign: "center", padding: 12 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3B30", boxShadow: "0 0 8px #FF3B30", margin: "0 auto 8px" }} />
+                      <div style={{ fontSize: 8, color: "#FF3B30", fontFamily: "monospace", letterSpacing: 1 }}>VIEW SOURCE \u25b6</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ background: "#0d0d0d", height: 60, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: c.c, boxShadow: `0 0 6px ${c.c}` }} />
+                  </div>
+                )}
+                <div style={{ padding: "8px 10px", flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#FF3B30", boxShadow: "0 0 4px #FF3B30" }} />
+                      <span style={{ fontSize: 7, letterSpacing: 2, color: c.c, fontFamily: "monospace", fontWeight: 700 }}>{c.type}</span>
+                    </div>
+                    <span style={{ fontSize: 7, color: "#888", fontFamily: "monospace" }}>{c.date}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#fff", fontWeight: 600, marginBottom: 4, lineHeight: 1.3, fontFamily: "monospace" }}>{c.title}</div>
+                  <div style={{ fontSize: 9, color: "#ccc", lineHeight: 1.5, marginBottom: 5 }}>{c.detail}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 7, color: "#888", fontFamily: "monospace" }}>
+                    <span>{c.src}</span>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {c.views && <span style={{ color: c.c }}>{c.views} views</span>}
+                      {c.url && <span style={{ color: "#FF3B30", fontWeight: 700 }}>LIVE \u25b6</span>}
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
           <div style={{ textAlign: "center", marginTop: 8 }}>
-            <span style={{ fontSize: 7, letterSpacing: 3, color: "#444", fontFamily: "monospace" }}>LIVE FEED · ALL CHANNELS · ALL SCREENS · ALL AT ONCE</span>
+            <span style={{ fontSize: 7, letterSpacing: 3, color: "#444", fontFamily: "monospace" }}>LIVE BROADCASTS · ALL CHANNELS · ALL SCREENS · EMBEDDED FEEDS</span>
           </div>
         </div>
       </div>
@@ -854,7 +936,7 @@ export default function App() {
                     {/* Humanoid robot rendering after "Read that again" (Act I, para 4) */}
                     {ai === 0 && pi === 4 && (
                       <SideBySide
-                        left={<Model3D build={buildHumanoid} h={220} cap="3D RENDERING · DRAG TO ROTATE" />}
+                        left={<Model3D build={buildHumanoid} h={220} cap="3D MODEL · DRAG TO ROTATE · COMPARE WITH REAL IMAGE →" />}
                         right={<ImageCard caption="Phantom MK-1" source="Foundation (San Francisco) / Time" description="First humanoid robot deployed to an active warzone. Five foot nine. Carries a rifle. Arrived Ukraine February 2026 for battlefield evaluation." imgUrl="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Phantom_MK-1.jpg/640px-Phantom_MK-1.jpg" />}
                       />
                     )}
@@ -869,11 +951,11 @@ export default function App() {
                     <ImageCard caption="Ukrainian exoskeleton" source="7th Air Assault Corps, Pokrovsk, Mar 20, 2026" description="Soldiers of the 147th Artillery Brigade loading Bohdana howitzer shells in powered exoskeleton frames. Reduces strain by 30%, allows 20 km/h movement." imgUrl="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/VIATRIX_Powered_Exoskeleton.jpg/640px-VIATRIX_Powered_Exoskeleton.jpg" />
                   </div>
                   <SideBySide
-                    left={<Model3D build={buildDrone} h={200} cap="3D RENDERING · DRAG TO ROTATE" />}
+                    left={<Model3D build={buildDrone} h={200} cap="3D MODEL · DRAG TO ROTATE · COMPARE WITH REAL IMAGE →" />}
                     right={<ImageCard caption="FPV drone with RPG warhead" source="Ukrainian Armed Forces / Telegram" description="A hobbyist quadcopter with an RPG warhead zip-tied underneath. $400. Built with a soldering iron. Responsible for 65% of Russian tank kills. Ukraine produces 9,000 per day." imgUrl="https://upload.wikimedia.org/wikipedia/commons/4/4b/Ukrainian_FPV-drone.jpg" />}
                   />
                   <SideBySide
-                    left={<Model3D build={buildShahed} h={200} cap="3D RENDERING · DRAG TO ROTATE" />}
+                    left={<Model3D build={buildShahed} h={200} cap="3D MODEL · DRAG TO ROTATE · COMPARE WITH REAL IMAGE →" />}
                     right={<ImageCard caption="Shahed-136 loitering munition" source="IRGC / Iran Watch" description="Delta-winged, 3.5m long, launched in swarms of five from flatbed trucks. $20-50K per unit. Its warhead equals five 155mm shells. A Patriot interceptor to shoot one down costs $3.9M." imgUrl="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Shahed_136_at_the_IRGC_exhibition.jpg/640px-Shahed_136_at_the_IRGC_exhibition.jpg" />}
                   />
                 </>
@@ -932,7 +1014,7 @@ export default function App() {
               {ai === 3 && (
                 <>
                   <SideBySide
-                    left={<Model3D build={buildF35} h={220} cap="3D RENDERING · DRAG TO ROTATE" />}
+                    left={<Model3D build={buildF35} h={220} cap="3D MODEL · DRAG TO ROTATE · COMPARE WITH REAL IMAGE →" />}
                     right={<ImageCard caption="F-35A Lightning II" source="USAF / Air & Space Forces Magazine" description="$100M per unit. $1.7 trillion program. 30 amassed in theater. On March 19, struck by a passive IR SAM (est. $50-200K). Stealth coating irrelevant: the sensor was looking for heat." imgUrl="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/F-35A_flight_%28cropped%29.jpg/640px-F-35A_flight_%28cropped%29.jpg" />}
                   />
                   <div style={{margin:"24px auto",maxWidth:520}}>
