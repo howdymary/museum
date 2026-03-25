@@ -1,6 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Component } from "react";
 import * as THREE from "three";
 import TweetTimeline from "./TweetTimeline";
+
+class SafeWrap extends Component {
+  constructor(props) { super(props); this.state = { err: false }; }
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch(e) { console.error("[SafeWrap]", e); }
+  render() { return this.state.err ? null : this.props.children; }
+}
 
 const ESSAY = [
   {
@@ -384,56 +391,78 @@ function EvolutionStepper() {
 }
 
 function XEmbed({ tweetId }) {
-  const ref = useRef(null);
+  const embedRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!tweetId || !ref.current) return;
+    if (!tweetId) return;
+    const container = embedRef.current;
+    if (!container) return;
 
-    // Load Twitter widget script if not already present
+    let cancelled = false;
+
     const loadWidgets = () => {
-      if (window.twttr && window.twttr.widgets) {
-        ref.current.innerHTML = '';
-        window.twttr.widgets.createTweet(tweetId, ref.current, {
-          theme: 'dark',
-          dnt: true,
-          width: 300,
-          conversation: 'none',
-        }).then(() => setLoaded(true));
+      if (cancelled) return;
+      try {
+        if (window.twttr && window.twttr.widgets) {
+          window.twttr.widgets.createTweet(tweetId, container, {
+            theme: 'dark',
+            dnt: true,
+            width: 280,
+            conversation: 'none',
+          }).then((el) => {
+            if (!cancelled) {
+              setLoaded(!!el);
+              if (!el) setError(true);
+            }
+          }).catch(() => { if (!cancelled) setError(true); });
+        }
+      } catch (e) {
+        if (!cancelled) setError(true);
       }
     };
 
     if (!window.twttr) {
-      const script = document.createElement('script');
-      script.src = 'https://platform.twitter.com/widgets.js';
-      script.async = true;
-      script.onload = () => {
-        // twttr.widgets.load is available after script loads
-        setTimeout(loadWidgets, 300);
-      };
-      document.head.appendChild(script);
+      // Only add script once
+      if (!document.querySelector('script[src*="platform.twitter.com/widgets.js"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://platform.twitter.com/widgets.js';
+        script.async = true;
+        script.charset = 'utf-8';
+        script.onload = () => setTimeout(loadWidgets, 200);
+        script.onerror = () => { if (!cancelled) setError(true); };
+        document.head.appendChild(script);
+      } else {
+        // Script tag exists but hasn't loaded yet
+        const check = setInterval(() => {
+          if (window.twttr && window.twttr.widgets) {
+            clearInterval(check);
+            loadWidgets();
+          }
+        }, 200);
+        setTimeout(() => { clearInterval(check); if (!cancelled && !loaded) setError(true); }, 8000);
+      }
     } else {
       loadWidgets();
     }
+
+    return () => { cancelled = true; };
   }, [tweetId]);
 
   return (
-    <div
-      ref={ref}
-      style={{
-        minHeight: 200,
-        maxHeight: 400,
-        overflow: "hidden",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#000",
-      }}
-    >
+    <div style={{ minHeight: 150, maxHeight: 400, overflow: "hidden", background: "#000" }}>
+      {/* Separate container for Twitter widget — React won't touch this div */}
+      <div ref={embedRef} style={{ display: loaded ? "block" : "none" }} />
       {!loaded && (
-        <div style={{ textAlign: "center", padding: 16 }}>
-          <div style={{ fontSize: 18, marginBottom: 6, color: "#fff" }}>𝕏</div>
-          <div style={{ fontSize: 8, color: "#555", fontFamily: "monospace", letterSpacing: 1 }}>LOADING LIVE POST...</div>
+        <div style={{ height: 150, display: "flex", alignItems: "center", justifyContent: "center", cursor: error ? "pointer" : "default" }}
+          onClick={error ? () => window.open(`https://x.com/i/status/${tweetId}`, '_blank') : undefined}>
+          <div style={{ textAlign: "center", padding: 12 }}>
+            <div style={{ fontSize: 18, marginBottom: 6, color: "#fff" }}>𝕏</div>
+            <div style={{ fontSize: 8, color: error ? "#FF3B30" : "#555", fontFamily: "monospace", letterSpacing: 1 }}>
+              {error ? "VIEW ON X ▶" : "LOADING LIVE POST..."}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -895,7 +924,7 @@ export default function App() {
       <TheaterMap />
 
       {/* TWEET TIMELINE — market narrative overlay */}
-      <TweetTimeline />
+      <SafeWrap><TweetTimeline /></SafeWrap>
 
       {/* MEDIA MONTAGE */}
       <div style={{ borderBottom: "1px solid #1a1a1a", padding: "40px 20px 50px" }}>
@@ -927,7 +956,7 @@ export default function App() {
                     />
                   </div>
                 ) : hasXEmbed ? (
-                  <XEmbed tweetId={c.xId} />
+                  <SafeWrap><XEmbed tweetId={c.xId} /></SafeWrap>
                 ) : isCNN ? (
                   <div style={{ background: "#111", height: 120, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     onClick={() => window.open(c.url, '_blank')}>

@@ -53,12 +53,20 @@ export default function TweetTimeline() {
     setLoading(true);
     const file = `ohlc_${timeframe === "1D" ? "1d" : timeframe}.json`;
     fetch(`/data/${file}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
       .then(data => {
-        setOhlcData(data);
+        if (Array.isArray(data)) {
+          setOhlcData(data);
+        }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => {
+        console.error("[TweetTimeline] fetch failed:", e);
+        setLoading(false);
+      });
   }, [timeframe]);
 
   // Build candle data for selected asset
