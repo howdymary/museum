@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
+import TweetTimeline from "./TweetTimeline";
 
 const ESSAY = [
   {
@@ -831,6 +832,9 @@ export default function App() {
 
       {/* THEATER MAP */}
       <TheaterMap />
+
+      {/* TWEET TIMELINE — market narrative overlay */}
+      <TweetTimeline />
 
       {/* MEDIA MONTAGE */}
       <div style={{ borderBottom: "1px solid #1a1a1a", padding: "40px 20px 50px" }}>

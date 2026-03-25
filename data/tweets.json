@@ -1,0 +1,145 @@
+[
+  {
+    "id": "wh-cod",
+    "datetime": "2026-03-05T14:00:00Z",
+    "assetTags": ["WTI", "Brent"],
+    "author": "White House",
+    "handle": "@WhiteHouse",
+    "text": "Call of Duty kill score overlays on real strike footage. Set to Childish Gambino's 'Bonfire.' Caption: 'We're winning this fight.'",
+    "url": "https://x.com/WhiteHouse/status/2029307088808055083",
+    "isVerified": true,
+    "views": "58M"
+  },
+  {
+    "id": "wh-spongebob",
+    "datetime": "2026-03-06T12:00:00Z",
+    "assetTags": ["WTI", "Brent"],
+    "author": "White House",
+    "handle": "@WhiteHouse",
+    "text": "SpongeBob: 'Want to see me do it again?' 14 seconds. SpongeBob as superhero, then real missile strike. 'Will not stop. Unrelenting. Unapologetic.'",
+    "url": "https://x.com/WhiteHouse/status/2029657893155311927",
+    "isVerified": true,
+    "views": "18M"
+  },
+  {
+    "id": "wh-mk",
+    "datetime": "2026-03-06T18:00:00Z",
+    "assetTags": ["WTI", "Brent"],
+    "author": "White House",
+    "handle": "@WhiteHouse",
+    "text": "Mortal Kombat 'FLAWLESS VICTORY' spliced with Top Gun, Iron Man, Braveheart over real bombing runs. Caption: 'JUSTICE THE AMERICAN WAY.'",
+    "url": "https://x.com/WhiteHouse/status/2029741548791853331",
+    "isVerified": true,
+    "views": "12M"
+  },
+  {
+    "id": "wh-gta",
+    "datetime": "2026-03-07T15:00:00Z",
+    "assetTags": ["WTI", "Brent"],
+    "author": "White House",
+    "handle": "@WhiteHouse",
+    "text": "GTA: 'Ah sh*t, here we go again.' Grand Theft Auto: San Andreas opening, then real footage of US strike on a box truck.",
+    "url": "https://x.com/WhiteHouse/status/2029953667600646655",
+    "isVerified": true,
+    "views": "8M"
+  },
+  {
+    "id": "trump-allies",
+    "datetime": "2026-03-02T20:00:00Z",
+    "assetTags": ["WTI", "Brent", "Gold"],
+    "author": "Donald J. Trump",
+    "handle": "@realDonaldTrump",
+    "text": "'We don't need anybody.' Posted on Truth Social while zero allied nations had joined Operation Epic Fury. Germany: 'Not our war.'",
+    "url": "https://truthsocial.com/@realDonaldTrump/posts/116245182325726375",
+    "isVerified": true,
+    "views": null
+  },
+  {
+    "id": "kharazi-cnn",
+    "datetime": "2026-03-09T10:00:00Z",
+    "assetTags": ["WTI", "Brent", "Gold"],
+    "author": "Kamal Kharazi",
+    "handle": null,
+    "text": "Iran's foreign policy advisor on CNN, filmed inside Iran: 'It is a false narrative that Iranian capabilities have been degraded. There is no room for diplomacy anymore.'",
+    "url": "https://www.cnn.com/2026/03/09/world/video/iran-kamal-kharazi-no-diplomacy-vrtc",
+    "isVerified": false,
+    "views": "Live"
+  },
+  {
+    "id": "ghalibaf-x",
+    "datetime": "2026-03-21T22:00:00Z",
+    "assetTags": ["WTI", "Brent", "Gold", "BTC"],
+    "author": "Mohammad B. Ghalibaf",
+    "handle": "@Aborshd",
+    "text": "'If the Israeli regime is unable to intercept missiles in the heavily protected Dimona area, it is, operationally, a sign of entering a new phase of the battle.'",
+    "url": null,
+    "isVerified": true,
+    "views": null
+  },
+  {
+    "id": "tucker-piers",
+    "datetime": "2026-03-13T21:00:00Z",
+    "assetTags": ["MAGS", "BTC"],
+    "author": "Tucker Carlson",
+    "handle": "@TuckerCarlson",
+    "text": "Piers Morgan: 'The only people who support this war are those born 1946-1964 who watch Fox News. That's it.'",
+    "url": null,
+    "isVerified": true,
+    "views": "Viral"
+  },
+  {
+    "id": "joe-kent",
+    "datetime": "2026-03-18T16:00:00Z",
+    "assetTags": ["WTI", "Gold", "MAGS"],
+    "author": "Joe Kent",
+    "handle": null,
+    "text": "Former NCTC director, 20-yr Army, 11 combat deployments, Gold Star husband: 'No intelligence showed an imminent threat from Iran to the United States.'",
+    "url": "https://www.cnn.com/2026/03/18/politics/joe-kent-iran-tucker-carlson",
+    "isVerified": false,
+    "views": "121 min"
+  },
+  {
+    "id": "cyabra-deepfake",
+    "datetime": "2026-03-10T08:00:00Z",
+    "assetTags": ["MAGS", "BTC"],
+    "author": "Cyabra",
+    "handle": "@Cyaborshd",
+    "text": "72% of Iran war deepfake engagement occurs on TikTok. 145M+ views across multilingual AI campaigns: Farsi, Arabic, Hebrew, English. Synchronized posting windows.",
+    "url": null,
+    "isVerified": true,
+    "views": "145M+"
+  },
+  {
+    "id": "hormuz-closed",
+    "datetime": "2026-02-28T08:00:00Z",
+    "assetTags": ["WTI", "Brent", "Gold"],
+    "author": "IRGC",
+    "handle": null,
+    "text": "Iran shuts Strait of Hormuz. Explosive drone boats, mines, shore-based missiles. 20% of world oil transits these waters. Selective passage for China, Russia, India.",
+    "url": null,
+    "isVerified": false,
+    "views": null
+  },
+  {
+    "id": "f35-hit",
+    "datetime": "2026-03-19T14:00:00Z",
+    "assetTags": ["WTI", "Brent", "MAGS"],
+    "author": "IRGC",
+    "handle": null,
+    "text": "IRGC publishes video of damaged F-35A forced to emergency land. $100M aircraft hit by passive IR sensor. Stealth coating irrelevant — the sensor was looking for heat.",
+    "url": null,
+    "isVerified": false,
+    "views": null
+  },
+  {
+    "id": "dimona-strike",
+    "datetime": "2026-03-21T20:00:00Z",
+    "assetTags": ["WTI", "Brent", "Gold", "BTC"],
+    "author": "IDF",
+    "handle": "@IDF",
+    "text": "Iranian ballistic missiles strike Dimona and Arad. IDF admits interceptors failed. 64 wounded in Dimona, 116 in Arad. 20km from Israel's nuclear research center.",
+    "url": null,
+    "isVerified": true,
+    "views": null
+  }
+]
