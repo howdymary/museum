@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { createChart, LineStyle, CrosshairMode } from "lightweight-charts";
 import priceData from "../data/prices.json";
 import tweetData from "../data/tweets.json";
 
-// War events (subset of EVTS from App.jsx, key inflection points only)
 const WAR_EVENTS = [
   { date: "2026-02-28", label: "OPERATION EPIC FURY BEGINS", short: "D0" },
   { date: "2026-02-28", label: "HORMUZ CLOSED", short: "HORMUZ" },
@@ -16,121 +16,215 @@ const WAR_EVENTS = [
   { date: "2026-03-21", label: "DIMONA STRUCK, INTERCEPTORS FAIL", short: "DIMONA" },
 ];
 
-const ASSET_COLORS = {
-  WTI:   "#FF6B35",
-  Brent: "#FF3B30",
-  Gold:  "#F5A623",
-  BTC:   "#8B6FD4",
-  MAGS:  "#3478F6",
+const ASSET_CONFIG = {
+  WTI:   { color: "#FF6B35", label: "WTI Crude" },
+  Brent: { color: "#FF3B30", label: "Brent Crude" },
+  Gold:  { color: "#F5A623", label: "Gold" },
+  BTC:   { color: "#8B6FD4", label: "Bitcoin" },
+  MAGS:  { color: "#3478F6", label: "MAGS ETF" },
 };
 
 const ASSET_ORDER = ["WTI", "Brent", "Gold", "BTC", "MAGS"];
 
+// Convert "YYYY-MM-DD" to lightweight-charts time format
+function toChartTime(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return { year: y, month: m, day: d };
+}
+
 export default function TweetTimeline() {
-  const [hoveredTweet, setHoveredTweet] = useState(null);
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const seriesRefs = useRef({});
   const [selectedTweet, setSelectedTweet] = useState(null);
-  const [hoveredAsset, setHoveredAsset] = useState(null);
-  const svgRef = useRef(null);
-  const [dims, setDims] = useState({ w: 900, h: 420 });
+  const [hoveredTweet, setHoveredTweet] = useState(null);
+  const [hiddenAssets, setHiddenAssets] = useState(new Set());
 
-  // Responsive sizing
-  useEffect(() => {
-    const measure = () => {
-      if (svgRef.current) {
-        const w = svgRef.current.parentElement.clientWidth;
-        setDims({ w: Math.max(320, w), h: Math.min(460, Math.max(320, w * 0.48)) });
-      }
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-
-  // Compute normalized % change series
-  const { series, allDates, dateRange, yMin, yMax } = useMemo(() => {
+  // Compute normalized % change data per asset
+  const { seriesData, latestPct } = useMemo(() => {
     const byAsset = {};
     for (const r of priceData) {
       if (!byAsset[r.asset]) byAsset[r.asset] = [];
       byAsset[r.asset].push(r);
     }
 
-    const series = {};
-    const allDatesSet = new Set();
+    const seriesData = {};
+    const latestPct = {};
 
     for (const asset of ASSET_ORDER) {
       const rows = byAsset[asset];
       if (!rows || rows.length === 0) continue;
       const base = rows[0].close;
-      series[asset] = rows.map(r => {
-        allDatesSet.add(r.date);
-        return { date: r.date, pct: ((r.close - base) / base) * 100 };
-      });
+      seriesData[asset] = rows.map(r => ({
+        time: toChartTime(r.date),
+        value: ((r.close - base) / base) * 100,
+      }));
+      const last = rows[rows.length - 1];
+      latestPct[asset] = ((last.close - base) / base) * 100;
     }
 
-    const allDates = [...allDatesSet].sort();
-    const dateRange = {
-      start: new Date(allDates[0] + "T00:00:00"),
-      end: new Date(allDates[allDates.length - 1] + "T00:00:00"),
-    };
-
-    let yMin = -15, yMax = 15;
-    for (const asset of Object.keys(series)) {
-      for (const pt of series[asset]) {
-        if (pt.pct < yMin) yMin = pt.pct;
-        if (pt.pct > yMax) yMax = pt.pct;
-      }
-    }
-    // Add padding
-    yMin = Math.floor(yMin / 5) * 5 - 5;
-    yMax = Math.ceil(yMax / 5) * 5 + 5;
-
-    return { series, allDates, dateRange, yMin, yMax };
+    return { seriesData, latestPct };
   }, []);
 
-  const { w, h } = dims;
-  const pad = { top: 32, right: 24, bottom: 56, left: 52 };
-  const cw = w - pad.left - pad.right;
-  const ch = h - pad.top - pad.bottom;
-
-  const xScale = (dateStr) => {
-    const d = new Date(dateStr + "T00:00:00");
-    const t = (d - dateRange.start) / (dateRange.end - dateRange.start);
-    return pad.left + t * cw;
-  };
-
-  const yScale = (pct) => {
-    const t = (pct - yMin) / (yMax - yMin);
-    return pad.top + ch - t * ch;
-  };
-
-  const xScaleDateTime = (dt) => {
-    const d = new Date(dt);
-    const dayStart = new Date(d.toISOString().slice(0, 10) + "T00:00:00");
-    const t = (dayStart - dateRange.start) / (dateRange.end - dateRange.start);
-    return pad.left + Math.max(0, Math.min(1, t)) * cw;
-  };
-
-  // Build SVG path for each asset
-  const paths = useMemo(() => {
-    const result = {};
+  // Tweet markers per asset (for lightweight-charts markers)
+  const tweetMarkers = useMemo(() => {
+    const markers = {};
     for (const asset of ASSET_ORDER) {
-      if (!series[asset]) continue;
-      const pts = series[asset].map(p => `${xScale(p.date)},${yScale(p.pct)}`);
-      result[asset] = `M${pts.join("L")}`;
+      markers[asset] = [];
     }
-    return result;
-  }, [series, w, h]);
+    for (const tw of tweetData) {
+      const primaryAsset = tw.assetTags.find(a => seriesData[a]) || tw.assetTags[0];
+      if (!primaryAsset || !seriesData[primaryAsset]) continue;
+      const twDate = new Date(tw.datetime).toISOString().slice(0, 10);
+      markers[primaryAsset].push({
+        time: toChartTime(twDate),
+        position: "aboveBar",
+        color: ASSET_CONFIG[primaryAsset]?.color || "#fff",
+        shape: "circle",
+        text: "",
+        id: tw.id,
+      });
+    }
+    return markers;
+  }, [seriesData]);
 
-  // Y-axis gridlines
-  const yTicks = [];
-  for (let v = yMin; v <= yMax; v += 5) {
-    yTicks.push(v);
-  }
+  // Create / update chart
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
 
-  // X-axis date labels (show every ~4th date)
-  const xLabels = allDates.filter((_, i) => i % 4 === 0 || i === allDates.length - 1);
+    const container = chartContainerRef.current;
+
+    const chart = createChart(container, {
+      width: container.clientWidth,
+      height: 440,
+      layout: {
+        background: { color: "#060610" },
+        textColor: "#555",
+        fontFamily: "'SF Mono', 'Menlo', 'Consolas', monospace",
+        fontSize: 10,
+      },
+      grid: {
+        vertLines: { color: "rgba(255,255,255,0.03)" },
+        horzLines: { color: "rgba(255,255,255,0.03)" },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: {
+          color: "rgba(255,59,48,0.3)",
+          width: 1,
+          style: LineStyle.Dashed,
+          labelBackgroundColor: "#1a1a2a",
+        },
+        horzLine: {
+          color: "rgba(255,255,255,0.15)",
+          width: 1,
+          style: LineStyle.Dashed,
+          labelBackgroundColor: "#1a1a2a",
+        },
+      },
+      rightPriceScale: {
+        borderColor: "rgba(255,255,255,0.06)",
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+      },
+      timeScale: {
+        borderColor: "rgba(255,255,255,0.06)",
+        timeVisible: false,
+        rightOffset: 2,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+      handleScroll: false,
+      handleScale: false,
+    });
+
+    chartRef.current = chart;
+
+    // Add line series for each asset
+    for (const asset of ASSET_ORDER) {
+      if (!seriesData[asset]) continue;
+      const cfg = ASSET_CONFIG[asset];
+      const series = chart.addLineSeries({
+        color: cfg.color,
+        lineWidth: 2,
+        lineStyle: LineStyle.Solid,
+        crosshairMarkerVisible: true,
+        crosshairMarkerRadius: 4,
+        crosshairMarkerBorderColor: cfg.color,
+        crosshairMarkerBackgroundColor: "#060610",
+        priceFormat: {
+          type: "custom",
+          formatter: (v) => (v >= 0 ? "+" : "") + v.toFixed(1) + "%",
+        },
+        lastValueVisible: true,
+        priceLineVisible: false,
+        title: asset,
+      });
+      series.setData(seriesData[asset]);
+
+      // Add tweet markers for this asset
+      if (tweetMarkers[asset]?.length > 0) {
+        series.setMarkers(
+          tweetMarkers[asset].sort((a, b) => {
+            const ta = a.time.year * 10000 + a.time.month * 100 + a.time.day;
+            const tb = b.time.year * 10000 + b.time.month * 100 + b.time.day;
+            return ta - tb;
+          })
+        );
+      }
+
+      seriesRefs.current[asset] = series;
+    }
+
+    // Add zero line
+    const zeroLine = chart.addLineSeries({
+      color: "rgba(255,255,255,0.12)",
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      crosshairMarkerVisible: false,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    const allTimes = seriesData[ASSET_ORDER.find(a => seriesData[a])]?.map(d => d.time) || [];
+    if (allTimes.length > 0) {
+      zeroLine.setData(allTimes.map(t => ({ time: t, value: 0 })));
+    }
+
+    // Resize handler
+    const handleResize = () => {
+      chart.applyOptions({ width: container.clientWidth });
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+      chartRef.current = null;
+      seriesRefs.current = {};
+    };
+  }, [seriesData, tweetMarkers]);
+
+  // Toggle asset visibility
+  const toggleAsset = useCallback((asset) => {
+    setHiddenAssets(prev => {
+      const next = new Set(prev);
+      if (next.has(asset)) {
+        next.delete(asset);
+      } else {
+        next.add(asset);
+      }
+      // Apply visibility
+      const series = seriesRefs.current[asset];
+      if (series) {
+        series.applyOptions({
+          visible: !next.has(asset),
+        });
+      }
+      return next;
+    });
+  }, []);
 
   const activeTweet = selectedTweet || hoveredTweet;
+  const activeTweetData = activeTweet ? tweetData.find(t => t.id === activeTweet) : null;
 
   return (
     <div style={{
@@ -155,307 +249,218 @@ export default function TweetTimeline() {
             THE MARKET NARRATIVE
           </h2>
           <p style={{ fontSize: 14, color: "#ccc", fontStyle: "italic", maxWidth: 640, lineHeight: 1.6 }}>
-            Normalized price movement since February 27, 2026. Each dot is a real tweet or broadcast.
-            Hover to read. The market absorbs the war in real time.
+            Real-time price movement since February 27, 2026 — the day before the first strikes.
+            Each marker is a real tweet, broadcast, or government post. The market absorbs the war in real time.
           </p>
         </div>
 
-        {/* Legend */}
+        {/* Interactive Legend */}
         <div style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: "6px 16px",
-          marginBottom: 16,
+          gap: "4px 14px",
+          marginBottom: 12,
           padding: "8px 0",
           borderTop: "1px solid #111",
           borderBottom: "1px solid #111",
         }}>
-          {ASSET_ORDER.map(asset => (
-            <div
-              key={asset}
-              onMouseEnter={() => setHoveredAsset(asset)}
-              onMouseLeave={() => setHoveredAsset(null)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                cursor: "pointer",
-                opacity: hoveredAsset && hoveredAsset !== asset ? 0.3 : 1,
-                transition: "opacity 0.2s",
-              }}
-            >
-              <div style={{
-                width: 16, height: 2,
-                background: ASSET_COLORS[asset],
-              }} />
-              <span style={{
-                fontSize: 9,
-                fontFamily: "monospace",
-                letterSpacing: 1.5,
-                color: ASSET_COLORS[asset],
-                fontWeight: 700,
-              }}>
-                {asset}
-                {series[asset] && series[asset].length > 0 && (
-                  <span style={{ color: "#888", fontWeight: 400, marginLeft: 4 }}>
-                    {series[asset][series[asset].length - 1].pct >= 0 ? "+" : ""}
-                    {series[asset][series[asset].length - 1].pct.toFixed(1)}%
-                  </span>
-                )}
-              </span>
-            </div>
-          ))}
+          {ASSET_ORDER.map(asset => {
+            const cfg = ASSET_CONFIG[asset];
+            const isHidden = hiddenAssets.has(asset);
+            const pct = latestPct[asset];
+            return (
+              <div
+                key={asset}
+                onClick={() => toggleAsset(asset)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  cursor: "pointer",
+                  opacity: isHidden ? 0.25 : 1,
+                  transition: "opacity 0.2s",
+                  padding: "3px 0",
+                }}
+              >
+                <div style={{
+                  width: 16, height: 2,
+                  background: cfg.color,
+                  opacity: isHidden ? 0.3 : 1,
+                }} />
+                <span style={{
+                  fontSize: 9,
+                  fontFamily: "monospace",
+                  letterSpacing: 1.5,
+                  color: isHidden ? "#444" : cfg.color,
+                  fontWeight: 700,
+                  textDecoration: isHidden ? "line-through" : "none",
+                  userSelect: "none",
+                }}>
+                  {asset}
+                  {pct != null && (
+                    <span style={{ color: isHidden ? "#333" : (pct >= 0 ? "#2A9D3A" : "#FF3B30"), fontWeight: 400, marginLeft: 4 }}>
+                      {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%
+                    </span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-            <div style={{ width: 1, height: 10, background: "rgba(255,59,48,0.4)" }} />
-            <span style={{ fontSize: 8, fontFamily: "monospace", color: "#666", letterSpacing: 1 }}>WAR EVENT</span>
+            <svg width="8" height="8"><circle cx="4" cy="4" r="3" fill="none" stroke="#FF3B30" strokeWidth="1" /></svg>
+            <span style={{ fontSize: 8, fontFamily: "monospace", color: "#555", letterSpacing: 1 }}>TWEET / BROADCAST</span>
           </div>
         </div>
 
-        {/* SVG Chart */}
-        <div ref={svgRef} style={{
-          background: "#060610",
-          border: "1px solid #1a1a2a",
-          borderRadius: 4,
-          overflow: "hidden",
-          position: "relative",
+        {/* Chart container */}
+        <div style={{ position: "relative" }}>
+          <div
+            ref={chartContainerRef}
+            style={{
+              border: "1px solid #1a1a2a",
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          />
+
+          {/* War event labels along bottom inside chart area */}
+          <div style={{
+            position: "absolute",
+            bottom: 28,
+            left: 0,
+            right: 0,
+            pointerEvents: "none",
+            display: "flex",
+            justifyContent: "space-around",
+            padding: "0 60px 0 50px",
+          }}>
+            {/* We'll render these as static text under the chart instead */}
+          </div>
+        </div>
+
+        {/* War events ticker strip */}
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "2px 8px",
+          marginTop: 8,
+          padding: "6px 0",
+          borderBottom: "1px solid #111",
         }}>
-          <svg
-            viewBox={`0 0 ${w} ${h}`}
-            style={{ width: "100%", display: "block" }}
-            onMouseLeave={() => setHoveredTweet(null)}
-          >
-            {/* Background */}
-            <rect width={w} height={h} fill="#060610" />
+          {WAR_EVENTS.map((evt, i) => (
+            <span key={i} style={{
+              fontSize: 7,
+              fontFamily: "monospace",
+              color: "#444",
+              letterSpacing: 0.5,
+              whiteSpace: "nowrap",
+            }}>
+              <span style={{ color: "rgba(255,59,48,0.4)" }}>{evt.short}</span>
+              <span style={{ color: "#333", marginLeft: 3 }}>
+                {new Date(evt.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </span>
+              {i < WAR_EVENTS.length - 1 && <span style={{ color: "#222", margin: "0 2px" }}>/</span>}
+            </span>
+          ))}
+        </div>
 
-            {/* Grid */}
-            {yTicks.map(v => (
-              <g key={v}>
-                <line
-                  x1={pad.left} y1={yScale(v)}
-                  x2={w - pad.right} y2={yScale(v)}
-                  stroke={v === 0 ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.04)"}
-                  strokeWidth={v === 0 ? 1 : 0.5}
-                />
-                <text
-                  x={pad.left - 6} y={yScale(v) + 3}
-                  textAnchor="end"
-                  fill={v === 0 ? "#888" : "#555"}
-                  fontSize={8}
-                  fontFamily="monospace"
-                >
-                  {v > 0 ? "+" : ""}{v}%
-                </text>
-              </g>
-            ))}
-
-            {/* X-axis labels */}
-            {xLabels.map(d => (
-              <text
-                key={d}
-                x={xScale(d)}
-                y={h - pad.bottom + 16}
-                textAnchor="middle"
-                fill="#555"
-                fontSize={8}
-                fontFamily="monospace"
-              >
-                {new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </text>
-            ))}
-
-            {/* War event markers */}
-            {WAR_EVENTS.map((evt, i) => {
-              const x = xScale(evt.date);
-              if (x < pad.left || x > w - pad.right) return null;
-              return (
-                <g key={i}>
-                  <line
-                    x1={x} y1={pad.top}
-                    x2={x} y2={h - pad.bottom}
-                    stroke="rgba(255,59,48,0.15)"
-                    strokeWidth={1}
-                    strokeDasharray="3,4"
-                  />
-                  <text
-                    x={x}
-                    y={h - pad.bottom + 30}
-                    textAnchor="middle"
-                    fill="rgba(255,59,48,0.35)"
-                    fontSize={6}
-                    fontFamily="monospace"
-                    letterSpacing={0.5}
-                  >
-                    {evt.short}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Price lines */}
-            {ASSET_ORDER.map(asset => {
-              if (!paths[asset]) return null;
-              const dimmed = hoveredAsset && hoveredAsset !== asset;
-              return (
-                <path
-                  key={asset}
-                  d={paths[asset]}
-                  fill="none"
-                  stroke={ASSET_COLORS[asset]}
-                  strokeWidth={hoveredAsset === asset ? 2.5 : 1.5}
-                  opacity={dimmed ? 0.12 : 0.85}
-                  strokeLinejoin="round"
-                  style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
-                />
-              );
-            })}
-
-            {/* Endpoint dots */}
-            {ASSET_ORDER.map(asset => {
-              if (!series[asset] || series[asset].length === 0) return null;
-              const last = series[asset][series[asset].length - 1];
-              const dimmed = hoveredAsset && hoveredAsset !== asset;
-              return (
-                <circle
-                  key={`dot-${asset}`}
-                  cx={xScale(last.date)}
-                  cy={yScale(last.pct)}
-                  r={3}
-                  fill={ASSET_COLORS[asset]}
-                  opacity={dimmed ? 0.15 : 1}
-                  style={{ transition: "opacity 0.2s" }}
-                />
-              );
-            })}
-
-            {/* Tweet dots */}
-            {tweetData.map((tw, i) => {
-              const x = xScaleDateTime(tw.datetime);
-              // Place dot on the line of its primary asset tag
-              const primaryAsset = tw.assetTags.find(a => series[a]) || tw.assetTags[0];
-              const assetSeries = series[primaryAsset];
-              if (!assetSeries) return null;
-
-              const twDate = new Date(tw.datetime).toISOString().slice(0, 10);
-              const closest = assetSeries.reduce((best, pt) =>
-                Math.abs(new Date(pt.date) - new Date(twDate)) < Math.abs(new Date(best.date) - new Date(twDate)) ? pt : best
-              );
-              const y = yScale(closest.pct);
-              const isActive = activeTweet === tw.id;
-
-              return (
-                <g key={tw.id}>
-                  {/* Glow ring on hover */}
-                  {isActive && (
-                    <circle
-                      cx={x} cy={y} r={10}
-                      fill="none"
-                      stroke={ASSET_COLORS[primaryAsset]}
-                      strokeWidth={1}
-                      opacity={0.4}
-                    />
-                  )}
-                  <circle
-                    cx={x} cy={y}
-                    r={isActive ? 5 : 3.5}
-                    fill="#060610"
-                    stroke={ASSET_COLORS[primaryAsset]}
-                    strokeWidth={isActive ? 2 : 1.5}
-                    cursor="pointer"
-                    onMouseEnter={() => setHoveredTweet(tw.id)}
-                    onClick={() => setSelectedTweet(selectedTweet === tw.id ? null : tw.id)}
-                    style={{ transition: "r 0.15s" }}
-                  />
-                  {/* Small inner dot */}
-                  <circle
-                    cx={x} cy={y} r={1.5}
-                    fill={ASSET_COLORS[primaryAsset]}
-                    pointerEvents="none"
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Tweet card overlay */}
-          {activeTweet && (() => {
-            const tw = tweetData.find(t => t.id === activeTweet);
-            if (!tw) return null;
-            const x = xScaleDateTime(tw.datetime);
-            const primaryAsset = tw.assetTags.find(a => series[a]) || tw.assetTags[0];
-            const xPct = ((x - pad.left) / cw) * 100;
-            const flipRight = xPct > 65;
+        {/* Tweet cards row */}
+        <div style={{
+          marginTop: 16,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+          gap: 8,
+          maxHeight: 380,
+          overflowY: "auto",
+        }}>
+          {tweetData.map(tw => {
+            const primaryAsset = tw.assetTags.find(a => ASSET_CONFIG[a]) || tw.assetTags[0];
+            const color = ASSET_CONFIG[primaryAsset]?.color || "#888";
+            const isActive = activeTweet === tw.id;
 
             return (
-              <div style={{
-                position: "absolute",
-                top: 20,
-                [flipRight ? "right" : "left"]: flipRight ? `${100 - xPct + 2}%` : `${xPct + 2}%`,
-                width: 280,
-                background: "rgba(6,6,16,0.95)",
-                border: `1px solid ${ASSET_COLORS[primaryAsset]}33`,
-                borderRadius: 4,
-                padding: "12px 14px",
-                zIndex: 10,
-                backdropFilter: "blur(8px)",
-                boxShadow: `0 4px 24px rgba(0,0,0,0.6), 0 0 12px ${ASSET_COLORS[primaryAsset]}11`,
-                pointerEvents: selectedTweet ? "auto" : "none",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "#fff",
-                      fontFamily: "monospace",
-                    }}>
+              <div
+                key={tw.id}
+                onMouseEnter={() => setHoveredTweet(tw.id)}
+                onMouseLeave={() => setHoveredTweet(null)}
+                onClick={() => setSelectedTweet(selectedTweet === tw.id ? null : tw.id)}
+                style={{
+                  background: isActive ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.015)",
+                  border: `1px solid ${isActive ? color + "44" : "#1a1a2a"}`,
+                  borderRadius: 4,
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Top accent bar */}
+                <div style={{
+                  position: "absolute",
+                  top: 0, left: 0, right: 0,
+                  height: 2,
+                  background: color,
+                  opacity: isActive ? 0.8 : 0.3,
+                }} />
+
+                {/* Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "monospace" }}>
                       {tw.author}
                     </span>
                     {tw.isVerified && (
-                      <span style={{ fontSize: 8, color: ASSET_COLORS[primaryAsset] }}>&#10003;</span>
+                      <span style={{ fontSize: 7, color }}>&#10003;</span>
                     )}
                   </div>
-                  <span style={{
-                    fontSize: 7,
-                    color: "#888",
-                    fontFamily: "monospace",
-                  }}>
+                  <span style={{ fontSize: 7, color: "#666", fontFamily: "monospace" }}>
                     {new Date(tw.datetime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                 </div>
+
+                {/* Handle */}
                 {tw.handle && (
-                  <div style={{ fontSize: 8, color: "#666", fontFamily: "monospace", marginBottom: 6 }}>
+                  <div style={{ fontSize: 7, color: "#555", fontFamily: "monospace", marginBottom: 5 }}>
                     {tw.handle}
                   </div>
                 )}
+
+                {/* Text */}
                 <div style={{
-                  fontSize: 11,
-                  color: "#ccc",
-                  lineHeight: 1.55,
-                  marginBottom: 8,
-                  fontFamily: "Georgia, serif",
+                  fontSize: 10,
+                  color: "#bbb",
+                  lineHeight: 1.5,
+                  marginBottom: 7,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
                 }}>
                   {tw.text}
                 </div>
+
+                {/* Footer */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {tw.assetTags.map(tag => (
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {tw.assetTags.slice(0, 3).map(tag => (
                       <span key={tag} style={{
-                        fontSize: 7,
+                        fontSize: 6,
                         fontFamily: "monospace",
                         letterSpacing: 1,
-                        color: ASSET_COLORS[tag] || "#888",
-                        padding: "1px 4px",
-                        border: `1px solid ${(ASSET_COLORS[tag] || "#888")}44`,
+                        color: ASSET_CONFIG[tag]?.color || "#888",
+                        padding: "1px 3px",
+                        border: `1px solid ${(ASSET_CONFIG[tag]?.color || "#888")}33`,
                         borderRadius: 2,
                       }}>
                         {tag}
                       </span>
                     ))}
                   </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     {tw.views && (
-                      <span style={{ fontSize: 7, color: "#888", fontFamily: "monospace" }}>
-                        {tw.views} views
+                      <span style={{ fontSize: 6, color: "#666", fontFamily: "monospace" }}>
+                        {tw.views}
                       </span>
                     )}
                     {tw.url && (
@@ -463,6 +468,7 @@ export default function TweetTimeline() {
                         href={tw.url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         style={{
                           fontSize: 7,
                           color: "#FF3B30",
@@ -470,7 +476,6 @@ export default function TweetTimeline() {
                           fontWeight: 700,
                           letterSpacing: 1,
                           textDecoration: "none",
-                          pointerEvents: "auto",
                         }}
                       >
                         SOURCE &#8599;
@@ -480,7 +485,7 @@ export default function TweetTimeline() {
                 </div>
               </div>
             );
-          })()}
+          })}
         </div>
 
         {/* Bottom caption */}
@@ -490,19 +495,14 @@ export default function TweetTimeline() {
           alignItems: "center",
           marginTop: 10,
           padding: "6px 0",
+          flexWrap: "wrap",
+          gap: 8,
         }}>
-          <span style={{ fontSize: 7, color: "#444", fontFamily: "monospace", letterSpacing: 2 }}>
-            NORMALIZED % CHANGE FROM FEB 27 CLOSE
+          <span style={{ fontSize: 7, color: "#333", fontFamily: "monospace", letterSpacing: 2 }}>
+            NORMALIZED % CHANGE FROM FEB 27 CLOSE · CLICK LEGEND TO TOGGLE
           </span>
-          <span style={{ fontSize: 7, color: "#444", fontFamily: "monospace", letterSpacing: 2 }}>
-            SOURCE: YAHOO FINANCE · DAILY CLOSE
-          </span>
-        </div>
-
-        {/* Instruction */}
-        <div style={{ textAlign: "center", marginTop: 4 }}>
-          <span style={{ fontSize: 8, letterSpacing: 3, color: "#333", fontFamily: "monospace" }}>
-            HOVER DOTS TO READ TWEETS · CLICK TO PIN · HOVER LEGEND TO ISOLATE
+          <span style={{ fontSize: 7, color: "#333", fontFamily: "monospace", letterSpacing: 2 }}>
+            SOURCE: YAHOO FINANCE · DAILY CLOSE · REAL DATA
           </span>
         </div>
       </div>
