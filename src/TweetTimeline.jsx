@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { createChart, LineStyle, CrosshairMode } from "lightweight-charts";
+import {
+  createChart,
+  LineSeries,
+  LineStyle,
+  CrosshairMode,
+  createSeriesMarkers,
+} from "lightweight-charts";
 import priceData from "../data/prices.json";
 import tweetData from "../data/tweets.json";
 
@@ -26,7 +32,6 @@ const ASSET_CONFIG = {
 
 const ASSET_ORDER = ["WTI", "Brent", "Gold", "BTC", "MAGS"];
 
-// Convert "YYYY-MM-DD" to lightweight-charts time format
 function toChartTime(dateStr) {
   const [y, m, d] = dateStr.split("-").map(Number);
   return { year: y, month: m, day: d };
@@ -36,21 +41,19 @@ export default function TweetTimeline() {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRefs = useRef({});
+  const markerPrimitivesRef = useRef({});
   const [selectedTweet, setSelectedTweet] = useState(null);
   const [hoveredTweet, setHoveredTweet] = useState(null);
   const [hiddenAssets, setHiddenAssets] = useState(new Set());
 
-  // Compute normalized % change data per asset
   const { seriesData, latestPct } = useMemo(() => {
     const byAsset = {};
     for (const r of priceData) {
       if (!byAsset[r.asset]) byAsset[r.asset] = [];
       byAsset[r.asset].push(r);
     }
-
     const seriesData = {};
     const latestPct = {};
-
     for (const asset of ASSET_ORDER) {
       const rows = byAsset[asset];
       if (!rows || rows.length === 0) continue;
@@ -62,16 +65,12 @@ export default function TweetTimeline() {
       const last = rows[rows.length - 1];
       latestPct[asset] = ((last.close - base) / base) * 100;
     }
-
     return { seriesData, latestPct };
   }, []);
 
-  // Tweet markers per asset (for lightweight-charts markers)
-  const tweetMarkers = useMemo(() => {
+  const tweetMarkersByAsset = useMemo(() => {
     const markers = {};
-    for (const asset of ASSET_ORDER) {
-      markers[asset] = [];
-    }
+    for (const asset of ASSET_ORDER) markers[asset] = [];
     for (const tw of tweetData) {
       const primaryAsset = tw.assetTags.find(a => seriesData[a]) || tw.assetTags[0];
       if (!primaryAsset || !seriesData[primaryAsset]) continue;
@@ -81,17 +80,23 @@ export default function TweetTimeline() {
         position: "aboveBar",
         color: ASSET_CONFIG[primaryAsset]?.color || "#fff",
         shape: "circle",
-        text: "",
+        size: 0.5,
         id: tw.id,
+      });
+    }
+    // Sort each by time
+    for (const asset of ASSET_ORDER) {
+      markers[asset].sort((a, b) => {
+        const ta = a.time.year * 10000 + a.time.month * 100 + a.time.day;
+        const tb = b.time.year * 10000 + b.time.month * 100 + b.time.day;
+        return ta - tb;
       });
     }
     return markers;
   }, [seriesData]);
 
-  // Create / update chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
-
     const container = chartContainerRef.current;
 
     const chart = createChart(container, {
@@ -136,14 +141,13 @@ export default function TweetTimeline() {
       handleScroll: false,
       handleScale: false,
     });
-
     chartRef.current = chart;
 
-    // Add line series for each asset
+    // Add line series per asset (v5 API)
     for (const asset of ASSET_ORDER) {
       if (!seriesData[asset]) continue;
       const cfg = ASSET_CONFIG[asset];
-      const series = chart.addLineSeries({
+      const series = chart.addSeries(LineSeries, {
         color: cfg.color,
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
@@ -160,36 +164,29 @@ export default function TweetTimeline() {
         title: asset,
       });
       series.setData(seriesData[asset]);
-
-      // Add tweet markers for this asset
-      if (tweetMarkers[asset]?.length > 0) {
-        series.setMarkers(
-          tweetMarkers[asset].sort((a, b) => {
-            const ta = a.time.year * 10000 + a.time.month * 100 + a.time.day;
-            const tb = b.time.year * 10000 + b.time.month * 100 + b.time.day;
-            return ta - tb;
-          })
-        );
-      }
-
       seriesRefs.current[asset] = series;
+
+      // Add markers via createSeriesMarkers (v5 API)
+      if (tweetMarkersByAsset[asset]?.length > 0) {
+        const primitive = createSeriesMarkers(series, tweetMarkersByAsset[asset]);
+        markerPrimitivesRef.current[asset] = primitive;
+      }
     }
 
-    // Add zero line
-    const zeroLine = chart.addLineSeries({
-      color: "rgba(255,255,255,0.12)",
-      lineWidth: 1,
-      lineStyle: LineStyle.Dashed,
-      crosshairMarkerVisible: false,
-      lastValueVisible: false,
-      priceLineVisible: false,
-    });
+    // Zero line
     const allTimes = seriesData[ASSET_ORDER.find(a => seriesData[a])]?.map(d => d.time) || [];
     if (allTimes.length > 0) {
-      zeroLine.setData(allTimes.map(t => ({ time: t, value: 0 })));
+      const zeroSeries = chart.addSeries(LineSeries, {
+        color: "rgba(255,255,255,0.12)",
+        lineWidth: 1,
+        lineStyle: LineStyle.Dashed,
+        crosshairMarkerVisible: false,
+        lastValueVisible: false,
+        priceLineVisible: false,
+      });
+      zeroSeries.setData(allTimes.map(t => ({ time: t, value: 0 })));
     }
 
-    // Resize handler
     const handleResize = () => {
       chart.applyOptions({ width: container.clientWidth });
     };
@@ -200,10 +197,10 @@ export default function TweetTimeline() {
       chart.remove();
       chartRef.current = null;
       seriesRefs.current = {};
+      markerPrimitivesRef.current = {};
     };
-  }, [seriesData, tweetMarkers]);
+  }, [seriesData, tweetMarkersByAsset]);
 
-  // Toggle asset visibility
   const toggleAsset = useCallback((asset) => {
     setHiddenAssets(prev => {
       const next = new Set(prev);
@@ -212,19 +209,15 @@ export default function TweetTimeline() {
       } else {
         next.add(asset);
       }
-      // Apply visibility
       const series = seriesRefs.current[asset];
       if (series) {
-        series.applyOptions({
-          visible: !next.has(asset),
-        });
+        series.applyOptions({ visible: !next.has(asset) });
       }
       return next;
     });
   }, []);
 
   const activeTweet = selectedTweet || hoveredTweet;
-  const activeTweetData = activeTweet ? tweetData.find(t => t.id === activeTweet) : null;
 
   return (
     <div style={{
@@ -254,7 +247,7 @@ export default function TweetTimeline() {
           </p>
         </div>
 
-        {/* Interactive Legend */}
+        {/* Legend */}
         <div style={{
           display: "flex",
           flexWrap: "wrap",
@@ -273,28 +266,18 @@ export default function TweetTimeline() {
                 key={asset}
                 onClick={() => toggleAsset(asset)}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
+                  display: "flex", alignItems: "center", gap: 6,
                   cursor: "pointer",
                   opacity: isHidden ? 0.25 : 1,
                   transition: "opacity 0.2s",
                   padding: "3px 0",
                 }}
               >
-                <div style={{
-                  width: 16, height: 2,
-                  background: cfg.color,
-                  opacity: isHidden ? 0.3 : 1,
-                }} />
+                <div style={{ width: 16, height: 2, background: cfg.color, opacity: isHidden ? 0.3 : 1 }} />
                 <span style={{
-                  fontSize: 9,
-                  fontFamily: "monospace",
-                  letterSpacing: 1.5,
-                  color: isHidden ? "#444" : cfg.color,
-                  fontWeight: 700,
-                  textDecoration: isHidden ? "line-through" : "none",
-                  userSelect: "none",
+                  fontSize: 9, fontFamily: "monospace", letterSpacing: 1.5,
+                  color: isHidden ? "#444" : cfg.color, fontWeight: 700,
+                  textDecoration: isHidden ? "line-through" : "none", userSelect: "none",
                 }}>
                   {asset}
                   {pct != null && (
@@ -312,7 +295,7 @@ export default function TweetTimeline() {
           </div>
         </div>
 
-        {/* Chart container */}
+        {/* Chart */}
         <div style={{ position: "relative" }}>
           <div
             ref={chartContainerRef}
@@ -322,39 +305,15 @@ export default function TweetTimeline() {
               overflow: "hidden",
             }}
           />
-
-          {/* War event labels along bottom inside chart area */}
-          <div style={{
-            position: "absolute",
-            bottom: 28,
-            left: 0,
-            right: 0,
-            pointerEvents: "none",
-            display: "flex",
-            justifyContent: "space-around",
-            padding: "0 60px 0 50px",
-          }}>
-            {/* We'll render these as static text under the chart instead */}
-          </div>
         </div>
 
-        {/* War events ticker strip */}
+        {/* War events strip */}
         <div style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "2px 8px",
-          marginTop: 8,
-          padding: "6px 0",
-          borderBottom: "1px solid #111",
+          display: "flex", flexWrap: "wrap", gap: "2px 8px",
+          marginTop: 8, padding: "6px 0", borderBottom: "1px solid #111",
         }}>
           {WAR_EVENTS.map((evt, i) => (
-            <span key={i} style={{
-              fontSize: 7,
-              fontFamily: "monospace",
-              color: "#444",
-              letterSpacing: 0.5,
-              whiteSpace: "nowrap",
-            }}>
+            <span key={i} style={{ fontSize: 7, fontFamily: "monospace", color: "#444", letterSpacing: 0.5, whiteSpace: "nowrap" }}>
               <span style={{ color: "rgba(255,59,48,0.4)" }}>{evt.short}</span>
               <span style={{ color: "#333", marginLeft: 3 }}>
                 {new Date(evt.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -364,7 +323,7 @@ export default function TweetTimeline() {
           ))}
         </div>
 
-        {/* Tweet cards row */}
+        {/* Tweet cards */}
         <div style={{
           marginTop: 16,
           display: "grid",
@@ -377,7 +336,6 @@ export default function TweetTimeline() {
             const primaryAsset = tw.assetTags.find(a => ASSET_CONFIG[a]) || tw.assetTags[0];
             const color = ASSET_CONFIG[primaryAsset]?.color || "#888";
             const isActive = activeTweet === tw.id;
-
             return (
               <div
                 key={tw.id}
@@ -387,97 +345,43 @@ export default function TweetTimeline() {
                 style={{
                   background: isActive ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.015)",
                   border: `1px solid ${isActive ? color + "44" : "#1a1a2a"}`,
-                  borderRadius: 4,
-                  padding: "10px 12px",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  position: "relative",
-                  overflow: "hidden",
+                  borderRadius: 4, padding: "10px 12px", cursor: "pointer",
+                  transition: "all 0.2s", position: "relative", overflow: "hidden",
                 }}
               >
-                {/* Top accent bar */}
-                <div style={{
-                  position: "absolute",
-                  top: 0, left: 0, right: 0,
-                  height: 2,
-                  background: color,
-                  opacity: isActive ? 0.8 : 0.3,
-                }} />
-
-                {/* Header */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: color, opacity: isActive ? 0.8 : 0.3 }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "monospace" }}>
-                      {tw.author}
-                    </span>
-                    {tw.isVerified && (
-                      <span style={{ fontSize: 7, color }}>&#10003;</span>
-                    )}
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "monospace" }}>{tw.author}</span>
+                    {tw.isVerified && <span style={{ fontSize: 7, color }}>&#10003;</span>}
                   </div>
                   <span style={{ fontSize: 7, color: "#666", fontFamily: "monospace" }}>
                     {new Date(tw.datetime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                 </div>
-
-                {/* Handle */}
-                {tw.handle && (
-                  <div style={{ fontSize: 7, color: "#555", fontFamily: "monospace", marginBottom: 5 }}>
-                    {tw.handle}
-                  </div>
-                )}
-
-                {/* Text */}
+                {tw.handle && <div style={{ fontSize: 7, color: "#555", fontFamily: "monospace", marginBottom: 5 }}>{tw.handle}</div>}
                 <div style={{
-                  fontSize: 10,
-                  color: "#bbb",
-                  lineHeight: 1.5,
-                  marginBottom: 7,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
+                  fontSize: 10, color: "#bbb", lineHeight: 1.5, marginBottom: 7,
+                  display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
                 }}>
                   {tw.text}
                 </div>
-
-                {/* Footer */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", gap: 3 }}>
                     {tw.assetTags.slice(0, 3).map(tag => (
                       <span key={tag} style={{
-                        fontSize: 6,
-                        fontFamily: "monospace",
-                        letterSpacing: 1,
+                        fontSize: 6, fontFamily: "monospace", letterSpacing: 1,
                         color: ASSET_CONFIG[tag]?.color || "#888",
-                        padding: "1px 3px",
-                        border: `1px solid ${(ASSET_CONFIG[tag]?.color || "#888")}33`,
-                        borderRadius: 2,
-                      }}>
-                        {tag}
-                      </span>
+                        padding: "1px 3px", border: `1px solid ${(ASSET_CONFIG[tag]?.color || "#888")}33`, borderRadius: 2,
+                      }}>{tag}</span>
                     ))}
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    {tw.views && (
-                      <span style={{ fontSize: 6, color: "#666", fontFamily: "monospace" }}>
-                        {tw.views}
-                      </span>
-                    )}
+                    {tw.views && <span style={{ fontSize: 6, color: "#666", fontFamily: "monospace" }}>{tw.views}</span>}
                     {tw.url && (
-                      <a
-                        href={tw.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <a href={tw.url} target="_blank" rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        style={{
-                          fontSize: 7,
-                          color: "#FF3B30",
-                          fontFamily: "monospace",
-                          fontWeight: 700,
-                          letterSpacing: 1,
-                          textDecoration: "none",
-                        }}
-                      >
+                        style={{ fontSize: 7, color: "#FF3B30", fontFamily: "monospace", fontWeight: 700, letterSpacing: 1, textDecoration: "none" }}>
                         SOURCE &#8599;
                       </a>
                     )}
@@ -488,15 +392,10 @@ export default function TweetTimeline() {
           })}
         </div>
 
-        {/* Bottom caption */}
+        {/* Footer */}
         <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginTop: 10,
-          padding: "6px 0",
-          flexWrap: "wrap",
-          gap: 8,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          marginTop: 10, padding: "6px 0", flexWrap: "wrap", gap: 8,
         }}>
           <span style={{ fontSize: 7, color: "#333", fontFamily: "monospace", letterSpacing: 2 }}>
             NORMALIZED % CHANGE FROM FEB 27 CLOSE · CLICK LEGEND TO TOGGLE
