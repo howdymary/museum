@@ -212,7 +212,7 @@
   {
     "asset": "Brent",
     "date": "2026-03-24",
-    "close": 98.53
+    "close": 99.05
   },
   {
     "asset": "Gold",
@@ -302,7 +302,7 @@
   {
     "asset": "Gold",
     "date": "2026-03-24",
-    "close": 4588.2
+    "close": 4575.2
   },
   {
     "asset": "MAGS",
@@ -482,6 +482,6 @@
   {
     "asset": "WTI",
     "date": "2026-03-24",
-    "close": 88.08
+    "close": 88.37
   }
 ]

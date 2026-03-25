@@ -97,15 +97,19 @@ const ESSAY = [
 ];
 
 const CLIPS = [
-  { type:"WHITE HOUSE",title:"Call of Duty kill scores over real strikes",detail:"Set to Childish Gambino's 'Bonfire.' Kill score overlays after each real explosion. 'We're winning this fight.' No indication which footage is real.",views:"58M",date:"Mar 5",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029307088808055083" },
-  { type:"WHITE HOUSE",title:"SpongeBob: 'Want to see me do it again?'",detail:"14 seconds. SpongeBob as superhero, then real missile strike. Caption: 'Will not stop. Unrelenting. Unapologetic.'",views:"18M",date:"Mar 6",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029657893155311927" },
-  { type:"WHITE HOUSE",title:"Mortal Kombat 'FLAWLESS VICTORY'",detail:"Top Gun, Iron Man, Braveheart, Gladiator spliced with real strikes. Caption: 'JUSTICE THE AMERICAN WAY.'",views:"12M",date:"Mar 6",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029741548791853331" },
-  { type:"WHITE HOUSE",title:"GTA: 'Ah sh*t, here we go again'",detail:"Grand Theft Auto: San Andreas opening, then real footage of US strike on a box truck.",views:"8M",date:"Mar 7",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029953667600646655" },
-  { type:"TUCKER CARLSON",title:"'I can't believe he did this to us'",detail:"Piers Morgan: 'The only people who support this war are those born 1946-1964 who watch Fox News. That's it.'",views:"Viral",date:"Mar 13",c:"#F5A623",src:"Tucker Carlson Network" },
+  { type:"WHITE HOUSE",title:"Call of Duty kill scores over real strikes",detail:"Set to Childish Gambino's 'Bonfire.' Kill score overlays after each real explosion. 'We're winning this fight.' No indication which footage is real.",views:"58M",date:"Mar 5",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029307088808055083",xId:"2029307088808055083" },
+  { type:"WHITE HOUSE",title:"SpongeBob: 'Want to see me do it again?'",detail:"14 seconds. SpongeBob as superhero, then real missile strike. Caption: 'Will not stop. Unrelenting. Unapologetic.'",views:"18M",date:"Mar 6",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029657893155311927",xId:"2029657893155311927" },
+  { type:"WHITE HOUSE",title:"Mortal Kombat 'FLAWLESS VICTORY'",detail:"Top Gun, Iron Man, Braveheart, Gladiator spliced with real strikes. Caption: 'JUSTICE THE AMERICAN WAY.'",views:"12M",date:"Mar 6",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029741548791853331",xId:"2029741548791853331" },
+  { type:"WHITE HOUSE",title:"GTA: 'Ah sh*t, here we go again'",detail:"Grand Theft Auto: San Andreas opening, then real footage of US strike on a box truck.",views:"8M",date:"Mar 7",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2029953667600646655",xId:"2029953667600646655" },
+  { type:"GHALIBAF",title:"'Entering a new phase of the battle'",detail:"Iran's Parliament Speaker posts operational analysis on X in English after Dimona missile strikes. Government at war, speaking in real time on the enemy's platform.",views:"",date:"Mar 21",c:"#2A9D3A",src:"Ghalibaf / X",url:"https://x.com/Aborshd/status/2035367802820157915",xId:"2035367802820157915" },
   { type:"TUCKER CARLSON",title:"Joe Kent: 'No intelligence showed imminent threat'",detail:"Former NCTC director, 20-yr Army, 11 combat deployments, Gold Star husband: 'No intelligence showed an imminent threat from Iran.'",views:"121 min",date:"Mar 18",c:"#F5A623",src:"CNN / Tucker Carlson",url:"https://www.cnn.com/2026/03/18/politics/joe-kent-iran-tucker-carlson" },
   { type:"TRUMP",title:"'We don't need anybody'",detail:"Truth Social, while zero allied nations had joined. Germany: 'Not our war.' France: allies won't be at Trump's 'beck and call.'",views:"",date:"Mar '26",c:"#FF6B35",src:"Truth Social",url:"https://truthsocial.com/@realDonaldTrump/posts/116245182325726375" },
-  { type:"CNN INTERVIEW",title:"Iran's Kharazi: 'False narrative'",detail:"Filmed inside Iran. Calm, measured. 'No room for diplomacy.' Direct contrast to White House meme videos airing the same day.",views:"Live",date:"Mar '26",c:"#3478F6",src:"CNN / Pleitgen",url:"https://www.cnn.com/2026/03/09/world/video/iran-kamal-kharazi-no-diplomacy-vrtc" },
+  { type:"CNN INTERVIEW",title:"Iran's Kharazi: 'False narrative'",detail:"Filmed inside Iran. Calm, measured. 'No room for diplomacy.' Direct contrast to White House meme videos airing the same day.",views:"Live",date:"Mar 9",c:"#3478F6",src:"CNN / Pleitgen",url:"https://www.cnn.com/2026/03/09/world/video/iran-kamal-kharazi-no-diplomacy-vrtc" },
+  { type:"ZELENSKY",title:"Zelensky meets Pahlavi in Paris",detail:"Ukraine's president meets the exiled Shah's son. 'Discussed the situation in Iran and region.' Posted with photo on X.",views:"",date:"Mar 13",c:"#F5A623",src:"Zelensky / X",url:"https://x.com/ZelenskyyUa/status/2033244267376951306",xId:"2033244267376951306" },
+  { type:"IDF",title:"F-35I shoots down Yak-130 over Tehran",detail:"First F-35 air-to-air kill of a manned aircraft in history. IDF published footage within hours. An aviation milestone consumed in the time it takes to eat lunch.",views:"",date:"Mar 4",c:"#8B6FD4",src:"IDF / X",url:"https://x.com/IDF/status/2029010291157679939",xId:"2029010291157679939" },
   { type:"CYABRA",title:"72% of deepfake engagement on TikTok",detail:"Multilingual AI campaign: Farsi, Arabic, Hebrew, English. Synchronized posting, fixed hashtag clusters, Hollywood production values. 145M+ views.",views:"145M+",date:"Mar '26",c:"#8B6FD4",src:"Cyabra" },
+  { type:"WHITE HOUSE",title:"'The footage speaks for itself'",detail:"Compilation of US strike footage with dramatic music. Official government account treating war like a movie trailer.",views:"22M",date:"Mar 8",c:"#FF3B30",src:"White House / X",url:"https://x.com/WhiteHouse/status/2030287043050225704",xId:"2030287043050225704" },
+  { type:"CENTCOM",title:"Operation Epic Fury: 5,000 targets struck",detail:"CENTCOM's 10-day operational summary posted directly to X. Oil depots, missile sites, IRGC bases. Campaign tempo public in real time.",views:"",date:"Mar 7",c:"#3478F6",src:"CENTCOM / X",url:"https://x.com/CENTCOM/status/2030005382714560744",xId:"2030005382714560744" },
 ];
 
 const MS = [
@@ -375,6 +379,63 @@ function EvolutionStepper() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function XEmbed({ tweetId }) {
+  const ref = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!tweetId || !ref.current) return;
+
+    // Load Twitter widget script if not already present
+    const loadWidgets = () => {
+      if (window.twttr && window.twttr.widgets) {
+        ref.current.innerHTML = '';
+        window.twttr.widgets.createTweet(tweetId, ref.current, {
+          theme: 'dark',
+          dnt: true,
+          width: 300,
+          conversation: 'none',
+        }).then(() => setLoaded(true));
+      }
+    };
+
+    if (!window.twttr) {
+      const script = document.createElement('script');
+      script.src = 'https://platform.twitter.com/widgets.js';
+      script.async = true;
+      script.onload = () => {
+        // twttr.widgets.load is available after script loads
+        setTimeout(loadWidgets, 300);
+      };
+      document.head.appendChild(script);
+    } else {
+      loadWidgets();
+    }
+  }, [tweetId]);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        minHeight: 200,
+        maxHeight: 400,
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#000",
+      }}
+    >
+      {!loaded && (
+        <div style={{ textAlign: "center", padding: 16 }}>
+          <div style={{ fontSize: 18, marginBottom: 6, color: "#fff" }}>𝕏</div>
+          <div style={{ fontSize: 8, color: "#555", fontFamily: "monospace", letterSpacing: 1 }}>LOADING LIVE POST...</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -841,13 +902,14 @@ export default function App() {
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           <div style={{ fontSize: 9, letterSpacing: 5, color: "#FF3B30", fontFamily: "monospace", marginBottom: 10 }}>MODERN WARFARE</div>
           <h2 style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 42, color: "#fff", letterSpacing: 2, lineHeight: 1, marginBottom: 6 }}>THE BROADCAST WALL</h2>
-          <p style={{ fontSize: 14, color: "#ccc", fontStyle: "italic", marginBottom: 28 }}>Nine screens. Three weeks. The war as it played across every channel simultaneously.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 6, background: "#000", padding: 6, borderRadius: 2 }}>
+          <p style={{ fontSize: 14, color: "#ccc", fontStyle: "italic", marginBottom: 28 }}>Twelve screens. Three weeks. The war as it played across every channel simultaneously. Every embed is live.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 6, background: "#000", padding: 6, borderRadius: 2 }}>
             {CLIPS.map((c, i) => {
               const getYtId = (u) => { if (!u) return null; const m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/); return m ? m[1] : null; };
               const ytId = getYtId(c.url);
-              const isX = c.url && (c.url.includes('x.com') || c.url.includes('twitter.com'));
+              const hasXEmbed = !!c.xId;
               const isCNN = c.url && c.url.includes('cnn.com') && c.url.includes('video');
+              const isTruthSocial = c.url && c.url.includes('truthsocial.com');
               return (
               <div key={i} style={{
                 background: "#0a0a0a", border: "1px solid #222", borderRadius: 3, overflow: "hidden",
@@ -864,20 +926,24 @@ export default function App() {
                       allowFullScreen
                     />
                   </div>
-                ) : isX ? (
-                  <div style={{ background: "#000", height: 140, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                ) : hasXEmbed ? (
+                  <XEmbed tweetId={c.xId} />
+                ) : isCNN ? (
+                  <div style={{ background: "#111", height: 120, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     onClick={() => window.open(c.url, '_blank')}>
                     <div style={{ textAlign: "center", padding: 12 }}>
-                      <div style={{ fontSize: 22, marginBottom: 6, color: "#fff" }}>𝕏</div>
-                      <div style={{ fontSize: 8, color: "#1DA1F2", fontFamily: "monospace", letterSpacing: 1 }}>VIEW LIVE POST ▶</div>
+                      <div style={{ fontSize: 14, color: "#CC0000", fontWeight: 700, fontFamily: "monospace", letterSpacing: 2, marginBottom: 6 }}>CNN</div>
+                      <div style={{ fontSize: 10, color: "#ccc", fontFamily: "monospace", marginBottom: 6 }}>{c.title}</div>
+                      <div style={{ fontSize: 8, color: "#CC0000", fontFamily: "monospace", letterSpacing: 1 }}>WATCH LIVE VIDEO ▶</div>
                     </div>
                   </div>
-                ) : isCNN ? (
-                  <div style={{ background: "#111", height: 100, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                ) : isTruthSocial ? (
+                  <div style={{ background: "#111", height: 120, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     onClick={() => window.open(c.url, '_blank')}>
                     <div style={{ textAlign: "center", padding: 12 }}>
-                      <div style={{ fontSize: 10, color: "#CC0000", fontFamily: "monospace", letterSpacing: 1 }}>CNN VIDEO</div>
-                      <div style={{ fontSize: 8, color: "#CC0000", marginTop: 4, fontFamily: "monospace" }}>WATCH ▶</div>
+                      <div style={{ fontSize: 14, color: "#FF6B35", fontWeight: 700, fontFamily: "monospace", letterSpacing: 2, marginBottom: 6 }}>TRUTH SOCIAL</div>
+                      <div style={{ fontSize: 10, color: "#ccc", fontFamily: "monospace", marginBottom: 6 }}>@realDonaldTrump</div>
+                      <div style={{ fontSize: 8, color: "#FF6B35", fontFamily: "monospace", letterSpacing: 1 }}>VIEW ORIGINAL POST ▶</div>
                     </div>
                   </div>
                 ) : c.url ? (
